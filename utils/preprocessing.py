@@ -5,15 +5,27 @@ df = pd.read_csv('./data/raw_data.csv')
 
 # --------------- Exploration of df & univariates -----------------------------
 
-# print('df.shape', df.shape)
-# print('df.head()', df.head())
-# print('df.columns', df.columns)
-# print('df.info', df.info)
-# print('df.describe()', df.describe())
 
-# for col in df.columns:
-#     print(col, df[col].nunique())
-#     print(df[col].isna().sum())
+def explore_data():
+    '''Takes a DataFrame and explores it. This includes shape, columns,
+    describe, uniques & missings per column + value counts for certain
+    columns.
+
+    Returns: Print statements about data
+    '''
+    print('df.shape', df.shape)
+    print('df.head()', df.head())
+    print('df.columns', df.columns)
+    print('df.describe()', df.describe())
+
+    for col in df.columns:
+        print(f'{col}\n nunique: {df[col].nunique()}')
+        print(f' missings: {df[col].isna().sum()}')
+
+    print("value counts:")
+    for col in ['Region', 'Province', 'PropertyType', 'PropertySubType',
+                'SaleType', 'BedroomCount', 'Condition', 'Facades']:
+        print(df[col].value_counts())
 
 def preprocess_data():
     '''Takes a DataFrame and preprocesses it. This includes cleaning, feature
@@ -40,6 +52,7 @@ def get_columns():
 
 
 df = df[get_columns()]
+explore_data()
 
 # --------------- Feature engineering ----------------------------
 
