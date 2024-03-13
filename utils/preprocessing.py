@@ -15,6 +15,12 @@ df = pd.read_csv('./data/raw_data.csv')
 #     print(col, df[col].nunique())
 #     print(df[col].isna().sum())
 
+def preprocess_data():
+    '''Takes a DataFrame and preprocesses it. This includes cleaning, feature
+    engineering and scaling.
+
+    Returns: Preprocessed DataFrame
+    '''
 
 # --------------- Cleaning ----------------------------
 def get_columns():
@@ -34,3 +40,7 @@ def get_columns():
 
 
 df = df[get_columns()]
+
+# --------------- Feature engineering ----------------------------
+
+# --------------- Scaling ----------------------------
