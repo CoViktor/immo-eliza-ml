@@ -247,6 +247,7 @@ def drop_and_impute(df):
 
     return df
 
+# After split for df in [train_data, test_data]:
 for type in ['HOUSE', 'APARTMENT']:
     print(f'\n\n\n---{type}---')
     data = df[df['PropertyType'] == type].copy()
