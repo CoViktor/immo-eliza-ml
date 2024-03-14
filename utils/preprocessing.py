@@ -1,9 +1,13 @@
 import pandas as pd
-from datetime import datetime
 
+from datetime import datetime
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-# Getting the data
-df = pd.read_csv('./data/raw_data.csv')
+from scipy.stats import pearsonr
+import seaborn as sns
+
+
+
 
 # --------------- Exploration of df & univariates -----------------------------
 
@@ -16,7 +20,7 @@ def get_columns():
     Returns: List of columns that I want to include in my model.
     '''
 
-    return ['Region', 'Province', 'PostalCode', 'PropertySubType', 'Price',
+    return ['Region', 'Province', 'PostalCode', 'PropertyType', 'PropertySubType', 'Price',
             'SaleType', 'BidStylePricing', 'ConstructionYear', 'BedroomCount',
             'LivingArea', 'Furnished', 'Fireplace', 'Terrace', 'TerraceArea',
             'Garden', 'GardenArea', 'Facades', 'SwimmingPool', 'Condition',
@@ -68,6 +72,17 @@ def explore_data(df):
             print(len(outliers), f'outliers \nbelow Q1 - 1.5*IQR: {len(lower)}\nabove Q3 + 1.5*IQR (): {len(upper)}')
             print(f'lower = inbetween {lower[column].max()} and {lower[column].min()}')
             print(f'upper = inbetween {upper[column].min()} and {upper[column].max()}')
+
+def covariates(df, X, y):
+    for i in range(X.shape[1]):  # X.shape[1] gives the number of features
+        corr, _ = pearsonr(X[:, i], y)  # Calculate correlation between i'th feature and y
+        print(f'The correlation between feature {df.columns[i]} and y is {round(corr, 2)}')
+
+    correlation_matrix = df.corr()
+    plt.figure(figsize=(10, 8))  # Size of the figure
+    sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=.5)
+    plt.title('Correlation Matrix Heatmap')
+    plt.show()
 
 # --------------- Cleaning ----------------------------
 def cleaning_data(df):
@@ -147,38 +162,70 @@ def cleaning_data(df):
 
     return df
 
-# --------------- Cat_handling ----------------------------
-def one_hot(df):
-    # Onehotencoding / dummies
-    # -> PropertySubType, Region, Province
+# --------------- One Hot Encoding ----------------------------
+def one_hot(X_train, X_test, specific_columns=None):
+    """
+    Applies OneHotEncoding to the specified categorical columns.
+    
+    Parameters:
+    - X_train: Training feature DataFrame.
+    - X_test: Testing/validation feature DataFrame.
+    - specific_columns: List of specific columns to encode. If None, all object/category columns will be encoded.
+    
+    Returns:
+    - X_train_preprocessed: The training DataFrame with specified categorical columns one-hot encoded.
+    - X_test_preprocessed: The testing/validation DataFrame with specified categorical columns one-hot encoded.
+    """
+    print('One Hot Encoding...')
+    if specific_columns is None:
+        # Automatically select all object and category dtype columns if specific_columns is not provided
+        categorical_columns = X_train.select_dtypes(include=['object', 'category']).columns
+    else:
+        # Or focus on the specific columns provided
+        categorical_columns = specific_columns
+    
+    # Initialize the OneHotEncoder
+    encoder = OneHotEncoder(handle_unknown='ignore')
+    
+    # Fit and transform the training data, and transform the testing data
+    X_train_encoded = encoder.fit_transform(X_train[categorical_columns]).toarray()
+    X_test_encoded = encoder.transform(X_test[categorical_columns]).toarray()
+    
+    # Convert encoded data back to DataFrames
+    X_train_encoded_df = pd.DataFrame(X_train_encoded, columns=encoder.get_feature_names_out(), index=X_train.index)
+    X_test_encoded_df = pd.DataFrame(X_test_encoded, columns=encoder.get_feature_names_out(), index=X_test.index)
+    
+    # Drop original categorical columns and concatenate the encoded ones
+    X_train_preprocessed = pd.concat([X_train.drop(columns=categorical_columns), X_train_encoded_df], axis=1)
+    X_test_preprocessed = pd.concat([X_test.drop(columns=categorical_columns), X_test_encoded_df], axis=1)
 
-    return df
+    return X_train_preprocessed, X_test_preprocessed
 
 # --------------- Feature engineering ----------------------------
 # Possible things to drop:if 2 columns combined: drop others to prevent covariation (run & check)
 # -> total-area, time until exp data
 # Run model to test changing cats into binaries:
 # -> condition 
-def feature_engineer(df): 
+def feature_engineer(df):
+    print('Feature engineering...') 
     # Calculate 'TotalArea'
-    df['TotalArea'] = df['LivingArea'] + df['GardenArea'] + df['TerraceArea']
-    df = df.drop(columns=['LivingArea', 'GardenArea', 'TerraceArea'])
-
+    # df['TotalArea'] = df['LivingArea'] + df['GardenArea'] + df['TerraceArea']
+    # df = df.drop(columns=['LivingArea', 'GardenArea', 'TerraceArea'])
+    
     # Calc time until exp date
+    df['ListingCreateYear'] = df['ListingCreateDate'].dt.year
+    df['ListingCreateMonth'] = df['ListingCreateDate'].dt.month
+    df['ListingDurationDays'] = (df['ListingExpirationDate'] - df['ListingCreateDate']).dt.days
+    df.drop(['ListingCreateDate', 'ListingExpirationDate'], axis=1, inplace=True)
+
     # Combine certain categoricals
     # Condition -> Good, To_Be_Done_Up, To_Renovate, Just_Renovated, As_New, To_Restore
     # -> into ConditionBinary, where 0: To_Repair, 1: Good_Condition
-
     return df
 
-# ----------------- Split ----------------------------
-def split_data(df):
-    print('Splitting data...')
-    train_data, test_data = train_test_split(df, test_size=0.2, random_state=42)
-    return train_data, test_data
-
 # --------------- Drop & impute -----------------------------
-def drop_and_impute(df):
+def drop_outliers(df):
+    print('Outliers handling...')
     # Drop outliers of specific columns
     for column in df.columns:
         if column in ['ConstructionYear', 'Facades', 'LivingArea',
@@ -197,26 +244,30 @@ def drop_and_impute(df):
             upper = df[(df[column] > Q3 + threshold * IQR)]
             if column in ['ConstructionYear']:
                 df = df.drop(upper.index)
-            elif column in []:
-                df = df.drop(lower.index)  
             else:
                 df = df.drop(outliers.index)
-            print(f'dropped {column} outliers, shape: {df.shape}')
+            # print(f'dropped {column} outliers, shape: {df.shape}')
+    return df
 
+def impute_missings(df):
     # Filling missings for certain columns with mean -> Document this, as this can weaken correlations & give bias
     # Imputing with median
+    print('Imputing missings...')
     for col in ['ConstructionYear', 'Facades']:
         median_value = df[col].median()
         df[col] = df[col].fillna(median_value)
-        print(f'Imputed missing values in {col} with median: {median_value}')
+        # print(f'Imputed missing values in {col} with median: {median_value}')
+    return df
 
+def drop_missings(df):
     # Drop all remaining missings
     print('Dropping all missings...')
+    exclude= ['ConstructionYear', 'Facades']
     big_drops = ['Condition', 'EnergyConsumptionPerSqm']  # -> keep included, but drop when multivariate analysis
     for col in df.columns:
-        if col not in big_drops:
+        if col not in exclude:
             df = df.dropna(subset=[col])
-            print(f'Dropped missings for {col}, shape: {df.shape}')
+        # print(f'Dropped missings for {col}, shape: {df.shape}')
 
     return df
 
@@ -224,8 +275,9 @@ def drop_and_impute(df):
 def scale_data(df):
     print('Scaling data...')
     # Scale data
+    numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns
     scaler = StandardScaler() ## ????? -> check out manually
-    df = scaler.fit_transform(df)
+    df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
     return df
 
 # --------------- Preprocessing ----------------------------
@@ -238,23 +290,25 @@ def preprocess_data(df):
     Returns: Preprocessed DataFrame
     '''
     print('Preprocessing data...')
-    clean_df =cleaning_data(df)
-    # new_df = feature_engineer(cat_handled_df)
-    # SPLIT HERE
-    # one_hot_df = one_hot(clean_df)
-    # train_data, test_data = split_data(new_df)???? IN HERE OR DIFFERENT PART
-    # imputed_data = drop_and_impute(train_data)???? ^
-    # scaled_data = scale_data(imputed_data) ???? ^^ 
-    return clean_df # return X_train_preprocessed, X_test_preprocessed, y_train, y_test
+    clean_df = cleaning_data(df)
+    clean_df = drop_missings(clean_df)
+    clean_df = drop_outliers(clean_df) 
+    new_df = feature_engineer(clean_df)  # -> can be done after model is written to play around
+
+    print("Before splitting:", new_df.shape)
+    X = new_df.drop('Price', axis=1)  
+    y = new_df['Price']  
+
+    covariates(new_df, X, y)
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    print(f"After splitting:, X_train.shape: {X_train.shape}, X_test.shape: {X_test.shape}, y_train.shape: {y_train.shape}, y_test.shape: {y_test.shape}")
+
+    X_train_encoded, X_test_encoded = one_hot(X_train, X_test)
+    X_train_imputed = impute_missings(X_train_encoded)
+    X_test_imputed = impute_missings(X_test_encoded)
+    X_train_rescaled = scale_data(X_train_imputed)
+    X_test_rescaled = scale_data(X_test_imputed)
+    return X_train_rescaled, X_test_rescaled, y_train, y_test
 
 
-
-# After split for df in [train_data, test_data]:
-for type in ['HOUSE', 'APARTMENT']:
-    print(f'\n\n\n---{type}---')
-    data = df[df['PropertyType'] == type].copy()
-    prepped_data = preprocess_data(data) # X_train, X_test, y_train, y_test = preprocess_data(data)
-    explore_data(prepped_data) # explore_data(X_train)
-    print(f'---{type} OVER---\n\n\n')
-    
-    
