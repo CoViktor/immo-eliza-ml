@@ -1,5 +1,7 @@
 import pandas as pd
 from datetime import datetime
+
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 # Getting the data
 df = pd.read_csv('./data/raw_data.csv')
 
@@ -14,7 +16,7 @@ def get_columns():
     Returns: List of columns that I want to include in my model.
     '''
 
-    return ['Region', 'Province', 'PostalCode', 'PropertyType', 'PropertySubType', 'Price',
+    return ['Region', 'Province', 'PostalCode', 'PropertySubType', 'Price',
             'SaleType', 'BidStylePricing', 'ConstructionYear', 'BedroomCount',
             'LivingArea', 'Furnished', 'Fireplace', 'Terrace', 'TerraceArea',
             'Garden', 'GardenArea', 'Facades', 'SwimmingPool', 'Condition',
@@ -79,7 +81,7 @@ def cleaning_data(df):
     print(df.shape)
 
     # Task 1: Drop rows with empty values in 'Price' and 'LivingArea' columns
-    df.dropna(subset=['Price', 'LivingArea'], inplace=True)
+    df.dropna(subset=['Price'], inplace=True)
     print('missing price & livingarea removed:')
     print(df.shape)
 
@@ -145,66 +147,37 @@ def cleaning_data(df):
 
     return df
 
+# --------------- Cat_handling ----------------------------
+def one_hot(df):
+    # Onehotencoding / dummies
+    # -> PropertySubType, Region, Province
+
+    return df
 
 # --------------- Feature engineering ----------------------------
-
-def feature_engineer(df):
-        # Task 14: Calculate 'TotalArea'
-    raw_data['TotalArea'] = raw_data['LivingArea'] + raw_data['GardenArea'] + raw_data['TerraceArea']
-
-    # Task 16: Calculate 'PricePerLivingSquareMeter'
-    raw_data['PricePerLivingSquareMeter'] = (raw_data['Price'] / raw_data['LivingArea']).round().astype(int)
-
-    # Task 17: Calculate 'PricePerTotalSquareMeter'
-    raw_data['PricePerTotalSquareMeter'] = (raw_data['Price'] / raw_data['TotalArea']).round().astype(int)
+# Possible things to drop:if 2 columns combined: drop others to prevent covariation (run & check)
+# -> total-area, time until exp data
+# Run model to test changing cats into binaries:
+# -> condition 
+def feature_engineer(df): 
+    # Calculate 'TotalArea'
+    df['TotalArea'] = df['LivingArea'] + df['GardenArea'] + df['TerraceArea']
+    df = df.drop(columns=['LivingArea', 'GardenArea', 'TerraceArea'])
 
     # Calc time until exp date
-
     # Combine certain categoricals
     # Condition -> Good, To_Be_Done_Up, To_Renovate, Just_Renovated, As_New, To_Restore
     # -> into ConditionBinary, where 0: To_Repair, 1: Good_Condition
 
-    # Task 18: Convert string values to numeric values using dictionaries for specified columns
-    condition_mapping = {
-        'nan': None,
-        'To_Be_Done_Up': 2,
-        'To_Renovate': 1,
-        'Just_Renovated': 4,
-        'As_New': 5,
-        'Good': 3,
-        'To_Restore': 0
-    }
+    return df
 
-    kitchen_mapping = {
-        'nan': None,
-        'Installed': 1,
-        'Not_Installed': 0,
-        'Hyper_Equipped': 1,
-        'Semi_Equipped': 1,
-        'Usa_Installed': 1,
-        'Usa_Hyper_Equipped': 1,
-        'Usa_Semi_Equipped': 1,
-        'Usa_Uninstalled': 0
-    }
+# ----------------- Split ----------------------------
+def split_data(df):
+    print('Splitting data...')
+    train_data, test_data = train_test_split(df, test_size=0.2, random_state=42)
+    return train_data, test_data
 
-    raw_data['Condition#'] = raw_data['Condition'].map(condition_mapping)
-    raw_data['KitchenType#'] = raw_data['KitchenType'].map(kitchen_mapping)
-
-# --------------- Scaling ----------------------------
-
-
-# --------------- Preprocessing ----------------------------
-def preprocess_data(df):
-    '''Takes a DataFrame and preprocesses it. This includes cleaning, feature
-    engineering and scaling.
-
-    Returns: Preprocessed DataFrame
-    '''
-    print('Preprocessing data...')
-    clean_df =cleaning_data(df)
-    # new_df = feature_engineer(clean_df)
-    return clean_df
-
+# --------------- Drop & impute -----------------------------
 def drop_and_impute(df):
     # Drop outliers of specific columns
     for column in df.columns:
@@ -247,12 +220,41 @@ def drop_and_impute(df):
 
     return df
 
+# --------------- Scaling ----------------------------
+def scale_data(df):
+    print('Scaling data...')
+    # Scale data
+    scaler = StandardScaler() ## ????? -> check out manually
+    df = scaler.fit_transform(df)
+    return df
+
+# --------------- Preprocessing ----------------------------
+    # clean, feature engineer, SPLIT, drop&impute, scale
+    # drop_and_impute only after splitting into train and test
+def preprocess_data(df):
+    '''Takes a DataFrame and preprocesses it. This includes cleaning, feature
+    engineering and scaling.
+
+    Returns: Preprocessed DataFrame
+    '''
+    print('Preprocessing data...')
+    clean_df =cleaning_data(df)
+    # new_df = feature_engineer(cat_handled_df)
+    # SPLIT HERE
+    # one_hot_df = one_hot(clean_df)
+    # train_data, test_data = split_data(new_df)???? IN HERE OR DIFFERENT PART
+    # imputed_data = drop_and_impute(train_data)???? ^
+    # scaled_data = scale_data(imputed_data) ???? ^^ 
+    return clean_df # return X_train_preprocessed, X_test_preprocessed, y_train, y_test
+
+
+
 # After split for df in [train_data, test_data]:
 for type in ['HOUSE', 'APARTMENT']:
     print(f'\n\n\n---{type}---')
     data = df[df['PropertyType'] == type].copy()
-    prepped_data = preprocess_data(data)
-    explore_data(prepped_data)
+    prepped_data = preprocess_data(data) # X_train, X_test, y_train, y_test = preprocess_data(data)
+    explore_data(prepped_data) # explore_data(X_train)
     print(f'---{type} OVER---\n\n\n')
     
-# drop_and_impute only after splitting into train and test
+    
