@@ -1,5 +1,4 @@
-import pandas as pd
-from sklearn.linear_model import LinearRegression
+import statsmodels.api as sm
 
 from utils.preprocessing import preprocess_data
 from utils.data_import import import_data
@@ -10,10 +9,8 @@ import_data()
 def training(df):
     print('Training data...')
     X_train, X_test, y_train, y_test = preprocess_data(df)
-    print("After preprocessing step xtrain:", X_train.shape)
-    print("After preprocessing step xtest:", X_test.shape)
-    regressor = LinearRegression()
-    regressor.fit(X_train, y_train)
-    return X_train, X_test, y_train, y_test, regressor
+    
+    X_train_with_const = sm.add_constant(X_train)
+    trained_model = sm.OLS(y_train, X_train_with_const).fit()
 
-# big_drops = ['Condition', 'EnergyConsumptionPerSqm'] -> missings are still in there for simple regression, drop for multivariate if they're included
+    return X_train, X_test, y_train, y_test, trained_model, X_train_with_const
