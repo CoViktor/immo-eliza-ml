@@ -2,11 +2,16 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 import numpy as np 
 import statsmodels.api as sm
+from joblib import load
 
 
-def predict_evaluate(X_train, X_test, y_train, y_test, trained_model, X_train_with_const, type):
+def predict_evaluate(X_train, X_test, y_train, y_test, X_train_with_const, type):
     # print(f'Predicting and evaluating {type}...')
     # print(f'\n\n{type} TRAINING MODEL SUMMARY\n')
+
+    model_filename = f'models/{type}_trained_reg_model.joblib'
+    trained_model = load(model_filename)
+
     # print(trained_model.summary())  # -> Print nice oversight of all coefs
 
     # Predictions
