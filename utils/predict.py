@@ -3,10 +3,11 @@ from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 import numpy as np 
 import statsmodels.api as sm
 
+
 def predict_evaluate(X_train, X_test, y_train, y_test, trained_model, X_train_with_const, type):
-    print(f'Predicting and evaluating {type}...')
-    print(f'\n\n{type} TRAINING MODEL SUMMARY\n')
-    print(trained_model.summary())
+    # print(f'Predicting and evaluating {type}...')
+    # print(f'\n\n{type} TRAINING MODEL SUMMARY\n')
+    # print(trained_model.summary())  # -> Print nice oversight of all coefs
 
     # Predictions
     y_train_pred = trained_model.predict(X_train_with_const)
@@ -15,12 +16,12 @@ def predict_evaluate(X_train, X_test, y_train, y_test, trained_model, X_train_wi
     # Metrics for Training Set
     r2_train = r2_score(y_train, y_train_pred)
     rmse_train = np.sqrt(mean_squared_error(y_train, y_train_pred))
-    mae_train = mean_absolute_error(y_train, y_train_pred)
+    # mae_train = mean_absolute_error(y_train, y_train_pred)
 
     # Metrics for Test Set
     r2_test = r2_score(y_test, y_test_pred)
     rmse_test = np.sqrt(mean_squared_error(y_test, y_test_pred))
-    mae_test = mean_absolute_error(y_test, y_test_pred)
+    # mae_test = mean_absolute_error(y_test, y_test_pred)
 
     # Printing Metrics
     print(f"\n{type} Training Set Metrics:")
@@ -48,4 +49,4 @@ def predict_evaluate(X_train, X_test, y_train, y_test, trained_model, X_train_wi
     plt.ylabel('Predicted')
     plt.title(f'{type} - Test Data: Actual vs. Predicted')
 
-    plt.show()
+    # plt.show()

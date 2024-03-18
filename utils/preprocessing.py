@@ -21,14 +21,14 @@ def get_columns():
     Returns: List of columns that I want to include in my model.
     '''
 
-    return ['Region', 'PostalCode', 'PropertyType', 'PropertySubType', 'Price',
-            'SaleType', 'BidStylePricing', 'ConstructionYear', 'BedroomCount',
-            'LivingArea', 'Furnished', 'Fireplace', 'Terrace', 'TerraceArea',
+    return ['PostalZone', 'PropertyType', 'PropertySubType', 'Price',
+            'ConstructionYear', 'BedroomCount',
+            'LivingArea', 'Furnished', 'Fireplace', 'Terrace',
             'Garden', 'GardenArea', 'Facades', 'SwimmingPool', 'Condition',
-            'EnergyConsumptionPerSqm', 'Province', 'Latitude', 'Longitude']
+            'EnergyConsumptionPerSqm']
 
-    # columns removed after further analysis: 'EPCScore', , 'Latitude', 'Longitude', 'ListingCreateDate', 
-    #        'ListingExpirationDate'
+    # columns removed after further analysis: 'EPCScore', 'ListingCreateDate', 'PostalCode'
+    #        'ListingExpirationDate', 'TerraceArea', 'SaleType', 'BidStylePricing','Region', 'Province', 'Latitude', 'Longitude'
     # house
     # Low corr, but improvable: PostalCode
     # Ok corr: constryr, bedrmcount, livingarea (check covariance here), gardenarea, facades, swimmingpool, energycons, Region(gofor postalcode KNN); Province too, condition (combine?), subtype ok-ish
@@ -82,20 +82,23 @@ def explore_data(df):
             print(f'upper = inbetween {upper[column].min()} and {upper[column].max()}')
 
 def covariates(X_train, y_train):
+    X_train_numerical = X_train.select_dtypes(include=['number'])
+    # Combine X_train_numerical and y_train into a single DataFrame for correlation analysis
+    df = X_train_numerical.copy()
     # Combine X_train and y_train into a single DataFrame for correlation analysis
     # Assuming y_train is a Series; adjust if it's a DataFrame
-    df = X_train.copy()
+    df = X_train_numerical.copy()
     df['Target'] = y_train
     
     # Iterate over the feature columns to calculate correlation with the target
-    for feature_name in X_train.columns:
-        if pd.api.types.is_numeric_dtype(df[feature_name]):
-            # Calculate correlation between feature and target, excluding NaN values
-            valid_idx = df[feature_name].notna() & df['Target'].notna()
-            corr, _ = pearsonr(df.loc[valid_idx, feature_name], df.loc[valid_idx, 'Target'])
-            print(f'The correlation between feature {feature_name} and the target is {round(corr, 2)}')
-        else:
-            print(f"Skipping {feature_name}, not suitable for correlation calculation.")
+    # for feature_name in df.columns:
+    #     if pd.api.types.is_numeric_dtype(df[feature_name]):
+    #         # Calculate correlation between feature and target, excluding NaN values
+    #         valid_idx = df[feature_name].notna() & df['Target'].notna()
+    #         corr, _ = pearsonr(df.loc[valid_idx, feature_name], df.loc[valid_idx, 'Target'])
+    #         print(f'The correlation between feature {feature_name} and the target is {round(corr, 2)}')
+    #     else:
+    #         print(f"Skipping {feature_name}, not suitable for correlation calculation.")
 
     # Plot the correlation matrix including the target variable
     correlation_matrix = df.corr()
@@ -117,8 +120,8 @@ def cleaning_data(df):
 
     Returns: Cleaned DataFrame
     '''
-    print('~Cleaning data~\noriginal shape:')
-    print(df.shape)
+    # print('~Cleaning data~\noriginal shape:')
+    # print(df.shape)
 
     # Task 1: Drop rows with empty values in 'Price' and 'LivingArea' columns
     df.dropna(subset=['Price'], inplace=True)
@@ -131,10 +134,6 @@ def cleaning_data(df):
     # print('duplicates removed by id:')
     # print(df.shape)
 
-    # Task 3: Only include relevant columns
-    df = df[get_columns()]
-    # print('irrelevant columns excluded')
-    # print(df.shape)
 
     # Task 4: Convert empty values to 0 for specified columns; assumption that if blank then 0
     columns_to_fill_with_zero = ['Furnished', 'Fireplace', 'Terrace', 'TerraceArea', 'Garden', 'GardenArea', 'SwimmingPool', 'BidStylePricing']
@@ -184,6 +183,16 @@ def cleaning_data(df):
     # for col in date_columns:
     #     df[col] = pd.to_datetime(df[col], format='%Y-%m-%dT%H:%M:%S.%f%z', errors='coerce')
 
+    # Task x: Postal codes to string & postal zones
+    df['PostalCode'] = df['PostalCode'].astype(str)
+    df['PostalZone'] = df['PostalCode'].str.slice(0, 2)
+    df = df.drop(columns=['PostalCode'])
+
+    # Task 3: Only include relevant columns
+    df = df[get_columns()]
+    # print('irrelevant columns excluded')
+    # print(df.shape)
+
     return df
 
 # --------------- One Hot Encoding ----------------------------
@@ -200,7 +209,7 @@ def one_hot(X_train, X_test, specific_columns=None):
     - X_train_preprocessed: The training DataFrame with specified categorical columns one-hot encoded.
     - X_test_preprocessed: The testing/validation DataFrame with specified categorical columns one-hot encoded.
     """
-    print('One Hot Encoding...')
+    # print('One Hot Encoding...')
     if specific_columns is None:
         # Automatically select all object and category dtype columns if specific_columns is not provided
         categorical_columns = X_train.select_dtypes(include=['object', 'category']).columns
@@ -231,7 +240,7 @@ def one_hot(X_train, X_test, specific_columns=None):
 # Run model to test changing cats into binaries:
 # -> condition 
 def feature_engineer(df):
-    print('Feature engineering...') 
+    # print('Feature engineering...') 
     # Calculate 'TotalArea'
     # df['TotalArea'] = df['LivingArea'] + df['GardenArea'] + df['TerraceArea']
     # df = df.drop(columns=['LivingArea', 'GardenArea', 'TerraceArea'])
@@ -242,7 +251,7 @@ def feature_engineer(df):
     # df['Days_online'] = (df['ListingExpirationDate'] - df['ListingCreateDate']).dt.days
     # df.drop(['ListingCreateDate', 'ListingExpirationDate', 'ListingCreateYear', 'ListingCreateMonth'], axis=1, inplace=True)
 
-    # def condition_to_binary(condition):
+    # def condition_to_binary(condition): -> makes it worse
     #     if condition in ['Good', 'Just_Renovated', 'As_New']:
     #         return 1  # Good Condition
     #     else:
@@ -254,13 +263,13 @@ def feature_engineer(df):
 
 # --------------- Drop & impute -----------------------------
 def drop_outliers(df):
-    print('Outliers handling...')
+    # print('Outliers handling...')
     # Drop outliers of specific columns
     for column in df.columns:
         if column in ['Price', 'BedroomCount', 'ConstructionYear', 'Facades', 'LivingArea',
                       'GardenArea', 'EnergyConsumptionPerSqm']:
             # optional includes: 'Price', 'TerraceArea','BedroomCount' 
-            print(f'--{column}--')
+            # print(f'--{column}--')
             # setting IQR
             df[column].dropna()
             Q1 = df[column].quantile(0.25)
@@ -281,16 +290,21 @@ def drop_outliers(df):
 def impute_missings(df):
     # Filling missings for certain columns with mean -> Document this, as this can weaken correlations & give bias
     # Imputing with median
-    print('Imputing missings...')
-    for col in ['ConstructionYear', 'Facades']:
-        median_value = df[col].median()
-        df[col] = df[col].fillna(median_value)
-        # print(f'Imputed missing values in {col} with median: {median_value}')
+    # print('Imputing missings...')
+    if type == 'HOUSE':
+        for col in ['ConstructionYear', 'Facades']:
+            median_value = df[col].median()
+            df[col] = df[col].fillna(median_value)
+    elif type == 'APARTMENT':
+        for col in ['ConstructionYear', 'Facades']:
+            median_value = df[col].median()
+            df[col] = df[col].fillna(median_value)
+            # print(f'Imputed missing values in {col} with median: {median_value}')
     return df
 
 def drop_missings(df):
     # Drop all remaining missings
-    print('Dropping all missings...')
+    # print('Dropping all missings...')
     exclude= ['ConstructionYear', 'Facades']
     big_drops = ['Condition', 'EnergyConsumptionPerSqm']  # -> keep included, but drop when multivariate analysis
     for col in df.columns:
@@ -302,7 +316,7 @@ def drop_missings(df):
 
 # --------------- Scaling ----------------------------
 def scale_data(df):
-    print('Scaling data...')
+    # print('Scaling data...')
     # Scale data
     numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns
     scaler = StandardScaler() ## ????? -> check out manually
@@ -312,24 +326,28 @@ def scale_data(df):
 # --------------- Preprocessing ----------------------------
     # clean, feature engineer, SPLIT, drop&impute, scale
     # drop_and_impute only after splitting into train and test
-def preprocess_data(df):
+def preprocess_data(df, type):
     '''Takes a DataFrame and preprocesses it. This includes cleaning, feature
     engineering and scaling.
 
     Returns: Preprocessed DataFrame
     '''
-    print('Preprocessing data...')
+    # print('Preprocessing data...')
     clean_df = cleaning_data(df)
     clean_df = drop_missings(clean_df)
     clean_df = drop_outliers(clean_df) 
     new_df = feature_engineer(clean_df)  # -> can be done after model is written to play around
+    # if type == 'House':
+        # new_df = df.drop(columns= [], axis=1)
+    # if type == 'Apartment':
+    #     new_df = df.drop(columns= ['GardenArea'], axis=1)
     print("Before splitting:", new_df.shape)
     X = new_df.drop('Price', axis=1)  
     y = new_df['Price'] 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=40)
     print(f"After splitting:, X_train.shape: {X_train.shape}, X_test.shape: {X_test.shape}, y_train.shape: {y_train.shape}, y_test.shape: {y_test.shape}")
+    covariates(X_train, y_train)
     X_train_encoded, X_test_encoded = one_hot(X_train, X_test)
-    # covariates(X_train_encoded, y_train)
     X_train_imputed = impute_missings(X_train_encoded)
     X_test_imputed = impute_missings(X_test_encoded)
     X_train_rescaled = scale_data(X_train_imputed)
