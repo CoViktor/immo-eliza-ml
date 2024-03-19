@@ -16,9 +16,10 @@ def training_mlr(df, type):
     # saving the trained model
     model_filename = f'models/{type}_trained_mlr_model.joblib'
     dump(trained_model, model_filename)
-    print(f"Model saved as {model_filename}")
+    # print(f"Model saved as {model_filename}")
 
     return X_train, X_test, y_train, y_test, X_train_with_const
+
 
 def training_rf(df, type):
     X_train, X_test, y_train, y_test = preprocess_data(df, type)
@@ -28,6 +29,6 @@ def training_rf(df, type):
     # saving the trained model
     model_filename = f'models/{type}_trained_rf_model.joblib'
     dump(rf, model_filename)
-    print(f"Model saved as {model_filename}")
+    # print(f"Model saved as {model_filename}")
 
     return X_train, X_test, y_train, y_test, rf
