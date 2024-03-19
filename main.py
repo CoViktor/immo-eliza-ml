@@ -1,15 +1,7 @@
 import pandas as pd
+from utils.pipeline import run_mlr_model, run_rf_model
 
-from utils.train import training
-from utils.predict import predict_evaluate
-
-
-# Loading & training the data
 df = pd.read_csv('./data/raw_data.csv')
 
-for type in ['HOUSE', 'APARTMENT']:
-    print(f'\n---{type}---')
-    data = df[df['PropertyType'] == type].copy()
-    X_train, X_test, y_train, y_test, X_train_with_const = training(data, type)
-    predict_evaluate(X_train, X_test, y_train, y_test, X_train_with_const, type)
-    print(f'---{type} OVER---\n')
+run_mlr_model(df)
+run_rf_model(df)

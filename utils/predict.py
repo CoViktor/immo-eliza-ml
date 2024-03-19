@@ -5,11 +5,11 @@ import statsmodels.api as sm
 from joblib import load
 
 
-def predict_evaluate(X_train, X_test, y_train, y_test, X_train_with_const, type):
+def predict_evaluate_mlr(X_train, X_test, y_train, y_test, X_train_with_const, type):
     # print(f'Predicting and evaluating {type}...')
     # print(f'\n\n{type} TRAINING MODEL SUMMARY\n')
 
-    model_filename = f'models/{type}_trained_reg_model.joblib'
+    model_filename = f'models/{type}_trained_mlr_model.joblib'
     trained_model = load(model_filename)
 
     # print(trained_model.summary())  # -> Print nice oversight of all coefs
@@ -29,10 +29,10 @@ def predict_evaluate(X_train, X_test, y_train, y_test, X_train_with_const, type)
     # mae_test = mean_absolute_error(y_test, y_test_pred)
 
     # Printing Metrics
-    print(f"\n{type} Training Set Metrics:")
+    print(f"\n{type} MLR Training Set Metrics:")
     print(f"R2: {r2_train:.3f}, average error of {(rmse_train)/1000:.2f}K euros (RMSE)")
 
-    print(f"\n{type} Test Set Metrics:")
+    print(f"\n{type} MLR Test Set Metrics:")
     print(f"R2: {r2_test:.3f}, average error of {(rmse_test)/1000:.2f}K euros (RMSE)")
 
     # Creating a figure and a grid of subplots
@@ -55,3 +55,23 @@ def predict_evaluate(X_train, X_test, y_train, y_test, X_train_with_const, type)
     plt.title(f'{type} - Test Data: Actual vs. Predicted')
 
     # plt.show()
+
+
+def predict_evaluate_rf(X_train, X_test, y_train, y_test, type):
+    model_filename = f'models/{type}_trained_rf_model.joblib'
+    rf = load(model_filename)
+
+    # Make predictions
+    y_pred_train = rf.predict(X_train)
+    y_pred_test = rf.predict(X_test)
+
+    # Calculate R2 and RMSE scores
+    r2_train = r2_score(y_train, y_pred_train)
+    r2_test = r2_score(y_test, y_pred_test)
+    rmse_train = np.sqrt(mean_squared_error(y_train, y_pred_train))
+    rmse_test = np.sqrt(mean_squared_error(y_test, y_pred_test))
+
+    print(f"\n{type}Random Forest Training Set Metrics:")
+    print(f"R2: {r2_train:.3f}, average error of {(rmse_train)/1000:.2f}K euros (RMSE)")
+    print(f"\n{type}Random Forest Test Set Metrics:")
+    print(f"R2: {r2_test:.3f}, average error of {(rmse_test)/1000:.2f}K euros (RMSE)")
