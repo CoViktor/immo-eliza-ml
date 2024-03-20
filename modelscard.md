@@ -41,16 +41,16 @@ The features selected for the final models are:
 When running this Multiple Linear Regression model, the data is split in Houses and Apartmens from the beginning, as combining them has a negative effect on the metrics. Some features are clearly devided differently for these main subcategories in the data.
 
 ### Performance and evaluation
-The performance of the models was tested by looking at the R² and the RMSE of both the training- and test-sets, to check for overfitting on the training-set.
+The performance of the models was tested by looking at the R² and the RMSE (in K euros) of both the training- and test-sets, to check for overfitting on the training-set.
 Additionally, the model was run on 6 different random states, to check for robustness and overfitting on a certain test-set.
 
 Metrics:
 | Category                                            | Mean R²   | Std R²   | Mean RMSE | Std RMSE |
 |-----------------------------------------------------|-----------|----------|-----------|----------|
-| House MLR Training Set                              | 0.725     | 0.0019   | 87.32     | 0.37     |
-| House MLR Test Set                                  | 0.704     | 0.0076   | 91.25     | 1.20     |
-| Apartment MLR Training Set                          | 0.645     | 0.0036   | 67.20     | 0.58     |
-| Apartment MLR Test Set                              | 0.633     | 0.0120   | 68.68     | 2.40     |
+| House MLR Training Set                              | 0.725     | 0.0019   | 87.32K    | 0.37     |
+| House MLR Test Set                                  | 0.704     | 0.0076   | 91.25K    | 1.20     |
+| Apartment MLR Training Set                          | 0.645     | 0.0036   | 67.20K    | 0.58     |
+| Apartment MLR Test Set                              | 0.633     | 0.0120   | 68.68K    | 2.40     |
 
 
 - House prices are better explained by this model than apartment prices
@@ -78,8 +78,8 @@ On top of that, this model includes both property types, providing a prediction 
 
 | Category                                            | Mean R2   | Std R2   | Mean RMSE | Std RMSE |
 |-----------------------------------------------------|-----------|----------|-----------|----------|
-| Houses & Apartments Combined Training Set           | 0.961     | 0.0006   | 32.85     | 0.28     |
-| Houses & Apartments Combined Test Set               | 0.713     | 0.0064   | 89.12     | 1.78     |
+| Houses & Apartments Combined Training Set           | 0.961     | 0.0006   | 32.85K    | 0.28     |
+| Houses & Apartments Combined Test Set               | 0.713     | 0.0064   | 89.12K    | 1.78     |
 
 Runtime: 
 
