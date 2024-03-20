@@ -1,11 +1,7 @@
 import pandas as pd
-
 from datetime import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from scipy.stats import pearsonr
-import seaborn as sns
-import matplotlib.pyplot as plt
 import plotly.figure_factory as ff
 
 
