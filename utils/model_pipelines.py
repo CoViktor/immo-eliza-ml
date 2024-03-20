@@ -13,6 +13,8 @@ def run_rf_model(df):
     for type in ['HOUSE', 'APARTMENT']:
         # print(f'\n---{type}---')
         data = df[df['PropertyType'] == type].copy()
+        # type = 'Houses & apartments combined'
+        data = df.copy()
         X_train, X_test, y_train, y_test, rf = training_rf(data, type)
         predict_evaluate_rf(X_train, X_test, y_train, y_test, type)
         # print(f'---{type} OVER---\n')

@@ -344,8 +344,7 @@ def preprocess_data(df, type):
     # print("Before splitting:", new_df.shape)
     X = new_df.drop('Price', axis=1)  
     y = new_df['Price'] 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    # print(f"After splitting:, X_train.shape: {X_train.shape}, X_test.shape: {X_test.shape}, y_train.shape: {y_train.shape}, y_test.shape: {y_test.shape}")
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=55)
     # covariates(X_train, y_train)
     X_train_encoded, X_test_encoded = one_hot(X_train, X_test)
     X_train_imputed = impute_missings(X_train_encoded)
