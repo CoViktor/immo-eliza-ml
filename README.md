@@ -14,7 +14,7 @@ This project is focused on predicting real estate prices using machine learning 
 
 Make sure to check the models card for clarification on the models.
 
-<img src="https://images.unsplash.com/photo-1570129477492-45c003edd2be" width="400" height="auto"/>
+<img src="https://jiwall.com/wp-content/uploads/2021/06/Blank-768-x-513-copy-copy-copy-copy-copy-1-300x200.jpg" width="400" height="auto"/>
 
 ### Issues and update requests
 - If you encounter any issues or have suggestions for improvements, please feel free to open an issue in the repository.
