@@ -5,4 +5,4 @@ df = pd.read_csv('./data/raw_data.csv')
 
 # Comment out the model you don't want to run
 run_mlr_model(df)
-run_rf_model(df)
+# run_rf_model(df)

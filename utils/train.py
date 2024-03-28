@@ -25,11 +25,16 @@ def training_mlr(df, type):
     - X_train_with_const (pandas.DataFrame): Training features with a constant
       term added for intercept.
     """
+
+    print('original data shape: ', df.shape)
+
+
     X_train, X_test, y_train, y_test = preprocess_data(df, type)
     
     X_train_with_const = sm.add_constant(X_train)
     trained_model = sm.OLS(y_train, X_train_with_const).fit()
 
+    print('xtrainwithconst shape: ', X_train_with_const.shape)
     # saving the trained model
     model_filename = f'models/{type}_trained_mlr_model.joblib'
     dump(trained_model, model_filename)

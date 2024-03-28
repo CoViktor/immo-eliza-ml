@@ -3,6 +3,7 @@ from datetime import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 import plotly.figure_factory as ff
+from joblib import dump
 
 
 def get_columns():
@@ -163,7 +164,7 @@ def cleaning_data(df, type):
     
     return df
 
-def one_hot(X_train, X_test, specific_columns=None):
+def one_hot(X_train, X_test, type, specific_columns=None):
     """Applies OneHotEncoding to the specified categorical columns.
     
     Parameters:
@@ -178,6 +179,7 @@ def one_hot(X_train, X_test, specific_columns=None):
     - X_test_preprocessed: The testing/validation DataFrame with specified
       categorical columns one-hot encoded.
     """
+    
     # print('One Hot Encoding...')
     if specific_columns is None:
         # Automatically select all object and category dtype columns if specific_columns is not provided
@@ -186,11 +188,16 @@ def one_hot(X_train, X_test, specific_columns=None):
         # Or focus on the specific columns provided
         categorical_columns = specific_columns
     
+    print('encoded columns = ', categorical_columns)
+
     # Initialize the OneHotEncoder
     encoder = OneHotEncoder(handle_unknown='ignore')
     
     # Fit and transform the training data, and transform the testing data
     X_train_encoded = encoder.fit_transform(X_train[categorical_columns]).toarray()
+    
+    dump(encoder, f'models/{type}_encoder.joblib')
+    
     X_test_encoded = encoder.transform(X_test[categorical_columns]).toarray()
     
     # Convert encoded data back to DataFrames
@@ -200,6 +207,8 @@ def one_hot(X_train, X_test, specific_columns=None):
     # Drop original categorical columns and concatenate the encoded ones
     X_train_preprocessed = pd.concat([X_train.drop(columns=categorical_columns), X_train_encoded_df], axis=1)
     X_test_preprocessed = pd.concat([X_test.drop(columns=categorical_columns), X_test_encoded_df], axis=1)
+
+
 
     return X_train_preprocessed, X_test_preprocessed
 
@@ -292,7 +301,7 @@ def drop_missings(df):
 
     return df
 
-def scale_data(df):
+def scale_data(df, type):
     """Scales numeric columns in the dataframe using StandardScaler. This is
     useful for normalizing the range of continuous variables for certain
     types of modeling.
@@ -307,6 +316,7 @@ def scale_data(df):
     numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns
     scaler = StandardScaler()
     df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
+    dump(scaler, f'models/{type}_scaler.joblib')
 
     return df
 
@@ -326,12 +336,17 @@ def preprocess_data(df, type):
     y = new_df['Price'] 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=55)
     # covariates(X_train, y_train)
-    X_train_encoded, X_test_encoded = one_hot(X_train, X_test)
+    print('X_train.shape before encoding', X_train.shape)
+    print(X_train.columns)
+    X_train_encoded, X_test_encoded = one_hot(X_train, X_test, type)
     X_train_imputed = impute_missings(X_train_encoded)
     X_test_imputed = impute_missings(X_test_encoded)
-    X_train_rescaled = scale_data(X_train_imputed)
-    X_test_rescaled = scale_data(X_test_imputed)
-    # explore_data(X_train)
+    X_train_rescaled = scale_data(X_train_imputed, type)
+    X_test_rescaled = scale_data(X_test_imputed, type)
+    column_order = X_train_rescaled.columns
+    dump(column_order, f'models/{type}_columns.joblib')
+    explore_data(X_train)
+    explore_data(X_train_rescaled)
     # explore_data(X_test)
     return X_train_rescaled, X_test_rescaled, y_train, y_test
 
